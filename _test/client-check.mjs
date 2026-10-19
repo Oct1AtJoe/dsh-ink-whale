@@ -150,6 +150,17 @@ window.__ModuleLoader__ = { load: function (mod) { window.__clientMod = mod; } }
           return (b.innerText || '').indexOf('播放预览') >= 0;
         })[0];
         step('play button exists', !!play);
+
+        /* 底部 Star 入口：外链要指向仓库，且带 target/rel 不接管当前页 */
+        var star = document.querySelector('a.dshiw-star');
+        step('star link exists', !!star, star ? star.getAttribute('href') : 'missing');
+        step('star link points to repo', !!star && star.getAttribute('href') === 'https://github.com/w-j-y-wjy/dsh-ink-whale');
+        step('star link opens in new tab', !!star && star.getAttribute('target') === '_blank' &&
+          /noopener/.test(star.getAttribute('rel') || ''));
+        var starGlyph = star ? star.querySelector('.dshiw-star__glyph') : null;
+        step('star glyph is a star', !!starGlyph && (starGlyph.textContent || '').indexOf('★') >= 0,
+          starGlyph ? starGlyph.textContent : 'missing');
+
         if (play) play.click();
 
         setTimeout(function () {
@@ -159,9 +170,9 @@ window.__ModuleLoader__ = { load: function (mod) { window.__clientMod = mod; } }
           var inkPixels = 0;
           if (canvas) {
             var data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
-            for (var i = 0; i < data.length; i += 4 * 37) if (data[i] + data[i + 1] + data[i + 2] > 24) inkPixels++;
+            for (var i = 0; i < data.length; i += 4 * 7) if (data[i] + data[i + 1] + data[i + 2] > 24) inkPixels++;
           }
-          step('inline preview draws ink', inkPixels > 50, inkPixels + ' px');
+          step('inline preview draws ink', inkPixels > 200, inkPixels + ' px');
 
           window.__mountBoot = function () {
             var bootRoot = ReactDOM.createRoot(document.getElementById('boot'));
@@ -173,9 +184,9 @@ window.__ModuleLoader__ = { load: function (mod) { window.__clientMod = mod; } }
               var fullInk = 0;
               if (fullCanvas) {
                 var d2 = fullCanvas.getContext('2d').getImageData(0, 0, fullCanvas.width, fullCanvas.height).data;
-                for (var j = 0; j < d2.length; j += 4 * 53) if (d2[j] + d2[j + 1] + d2[j + 2] > 24) fullInk++;
+                for (var j = 0; j < d2.length; j += 4 * 11) if (d2[j] + d2[j + 1] + d2[j + 2] > 24) fullInk++;
               }
-              step('boot splash draws ink', fullInk > 50, fullInk + ' px');
+              step('boot splash draws ink', fullInk > 200, fullInk + ' px');
               report.done = true;
             }, 2600);
           };

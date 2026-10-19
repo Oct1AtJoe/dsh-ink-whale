@@ -25,6 +25,9 @@ window.__ModuleLoader__.load({
     var SETTINGS_ORDER = 50;
     var HOLD_SECONDS = 1.8;
 
+    /* 设置页底部的 Star 入口；跟着 package.json 的 repository 走。 */
+    var REPO_URL = 'https://github.com/w-j-y-wjy/dsh-ink-whale';
+
     var DEFAULT_CONFIG = {
       enabled: true,
       font: FONT_KEYS[0],
@@ -538,6 +541,22 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', onClick: resetDefaults }, '恢复默认'),
             h('span', { className: 'dshiw-set__note' }, '只重置这六项配置。')
           )
+        ),
+
+        /* 底部 Star 入口：一个外链，不加额外文案噪音。 */
+        h('div', { className: 'dshiw-set__foot' },
+          h('a', {
+            className: 'dshiw-star',
+            href: REPO_URL,
+            target: '_blank',
+            rel: 'noopener noreferrer',
+            title: REPO_URL,
+            'aria-label': '在 GitHub 上给 dsh-ink-whale 点 Star'
+          },
+            h('span', { className: 'dshiw-star__glyph', 'aria-hidden': 'true' }, '★'),
+            h('span', null, '喜欢的话，去 GitHub 给个 Star'),
+            h('span', { className: 'dshiw-star__arrow', 'aria-hidden': 'true' }, '↗')
+          )
         )
       );
     }
@@ -592,7 +611,17 @@ window.__ModuleLoader__.load({
       '.dshiw-set__switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;',
       'box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .18s ease}',
       '.dshiw-set__switch:checked{background:var(--dsw-alias-brand-primary,#3964fe)}',
-      '.dshiw-set__switch:checked::after{transform:translateX(16px)}'
+      '.dshiw-set__switch:checked::after{transform:translateX(16px)}',
+      /* 底部 Star：克制的单行外链，悬停才有一点反馈 */
+      '.dshiw-set__foot{display:flex;justify-content:center;padding:2px 0 6px}',
+      '.dshiw-star{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;font-size:11px;',
+      'color:var(--dsw-alias-label-secondary,#7f8287);text-decoration:none;border:1px solid transparent;',
+      'transition:color .16s ease,border-color .16s ease,background .16s ease}',
+      '.dshiw-star:hover{color:var(--dsw-alias-label-primary,#e8e8ea);background:var(--dsw-alias-interactive-bg-hover,rgba(127,127,127,.12));',
+      'border-color:var(--dsw-alias-border-l1,rgba(127,127,127,.28))}',
+      '.dshiw-star:focus-visible{outline:2px solid var(--dsw-focus-ring-color,var(--dsw-alias-brand-primary,#3964fe));outline-offset:2px}',
+      '.dshiw-star__glyph{font-size:13px;line-height:1;color:#E8A33D}',
+      '.dshiw-star__arrow{font-size:10px;opacity:.7}'
     ].join('');
 
     var ALL_CSS = DSHIW_CSS + SETTINGS_CSS;
