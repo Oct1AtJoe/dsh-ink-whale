@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Ink Whale Splash",
+    "description": "Plays a handwritten splash on startup: writes your text stroke by stroke, then settles into the whale lockup. Font, text and light/dark are configurable in Settings."
+  }
+}

@@ -1,0 +1,943 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DeepSeek · 开屏生成器</title>
+<style>
+  *{box-sizing:border-box}
+  /* 深色为默认值；浅色由 applyTheme() 用官方 token 覆盖 */
+  :root{
+    --bg:#000; --sub:#AEC1E2;
+    --halo-bg:radial-gradient(circle at 50% 50%,rgba(62,104,255,.19) 0%,rgba(40,72,210,.075) 30%,rgba(20,40,120,.025) 48%,rgba(0,0,0,0) 66%);
+    --launcher-bg:#000; --eyebrow:#4f607e; --label:#5d6d8a;
+    --input:#F2F7FF; --input2:#CFE0FF; --placeholder:#33425c; --line:#23334e;
+    --chip:#8fa3c8; --chip-hover:#3b5380;
+    --accent:#4D6BFE; --accent-hover:#5f7bff; --accent-soft:rgba(77,107,254,.16);
+    --dash:#1a263e; --preview-label:#42536f; --err:#ff7a90; --hint:#40506b;
+    --again:#5d6f8f; --again-hover:#9FB4DA;
+  }
+  html,body{margin:0;width:100%;height:100%;background:var(--bg);overflow:hidden}
+  body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;-webkit-font-smoothing:antialiased}
+  #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;background:var(--bg);overflow:hidden;
+         transform:translate(-50%,-50%) scale(1);transform-origin:50% 50%}
+  #halo{position:absolute;left:50%;top:46%;width:1250px;height:1250px;margin:-625px 0 0 -625px;border-radius:50%;
+        background:var(--halo-bg);
+        opacity:0;will-change:transform,opacity}
+  #ink{position:absolute;left:0;top:0;width:1920px;height:1080px;will-change:opacity,transform}
+  #lockupSvg{position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:visible}
+  #sub{position:absolute;left:0;top:688px;width:1920px;text-align:center;font-size:29px;font-weight:300;
+       letter-spacing:.42em;text-indent:.42em;color:var(--sub);opacity:0;white-space:nowrap;will-change:opacity,transform}
+  #launcher{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--launcher-bg);
+            z-index:10;transition:opacity .42s ease}
+  #launcher.gone{opacity:0;pointer-events:none}
+  #launchForm{width:560px;display:flex;flex-direction:column;gap:13px;transform:translateY(-4px)}
+  .eyebrow{font-size:12px;letter-spacing:.34em;color:var(--eyebrow);text-align:center;margin-bottom:4px}
+  .field span{display:block;font-size:11px;letter-spacing:.22em;color:var(--label);margin-bottom:8px}
+  .field input{width:100%;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--input);
+               font-family:inherit;font-size:30px;font-weight:300;line-height:1.3;padding:4px 2px 10px;outline:none;
+               transition:border-color .2s}
+  .field input#greetInput{font-size:20px;color:var(--input2)}
+  .field input:focus{border-bottom-color:var(--accent)}
+  .field input::placeholder{color:var(--placeholder)}
+  .fontRow{margin-top:2px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:transparent;border:1px solid var(--line);color:var(--chip);height:40px;padding:0 10px;border-radius:20px;
+        cursor:pointer;line-height:0;transition:color .2s,border-color .2s,background .2s}
+  .chip canvas{display:block;height:30px;width:auto}
+  .chip:hover{border-color:var(--chip-hover)}
+  .chip.on{border-color:var(--accent);background:var(--accent-soft)}
+  .preview{display:flex;align-items:center;gap:14px;min-height:52px;padding:0 0 8px;border-bottom:1px dashed var(--dash)}
+  .preview span{font-size:10px;letter-spacing:.22em;color:var(--preview-label);flex:none}
+  .preview canvas{display:block;width:520px;height:70px}
+  .err{height:15px;font-size:12px;color:var(--err);letter-spacing:.05em}
+  #playBtn{margin-top:6px;height:46px;border:0;border-radius:23px;background:var(--accent);color:#fff;
+           font-family:inherit;font-size:15px;letter-spacing:.12em;cursor:pointer;transition:background .2s,transform .15s}
+  #playBtn:hover{background:var(--accent-hover)}
+  #playBtn:active{transform:scale(.985)}
+  .hint{font-size:11px;color:var(--hint);text-align:center;letter-spacing:.05em;margin-top:1px}
+  .themes{display:flex;gap:6px;justify-content:center;margin-top:2px}
+  .themes button{background:none;border:1px solid var(--line);color:var(--chip);border-radius:12px;height:24px;padding:0 12px;
+                 font-family:inherit;font-size:11px;letter-spacing:.14em;cursor:pointer;
+                 transition:color .2s,border-color .2s,background .2s}
+  .themes button:hover{border-color:var(--chip-hover)}
+  .themes button.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+  #again{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);background:none;border:0;
+         color:var(--again);font-family:inherit;font-size:12px;letter-spacing:.18em;cursor:pointer;
+         opacity:0;pointer-events:none;transition:opacity .5s ease;z-index:5}
+  #again.show{opacity:.85;pointer-events:auto}
+  #again:hover{color:var(--again-hover)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="halo"></div>
+  <svg id="lockupSvg" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="whaleFillGrad" x1="0" y1="2" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#B4CCFF"/>
+        <stop offset=".42" stop-color="#7E9CFF"/>
+        <stop offset=".78" stop-color="#5C77FA"/>
+        <stop offset="1" stop-color="#4A60EA"/>
+      </linearGradient>
+      <linearGradient id="whaleRimGrad" x1="0" y1="2" x2="18" y2="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="#EAF2FF"/>
+        <stop offset=".5" stop-color="#A9C6FF"/>
+        <stop offset="1" stop-color="#7C9BFF"/>
+      </linearGradient>
+      <linearGradient id="wmGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#FFFFFF"/>
+        <stop offset=".62" stop-color="#EDF3FF"/>
+        <stop offset="1" stop-color="#D3E0FF"/>
+      </linearGradient>
+    </defs>
+    <g id="lockupG">
+      <g id="whaleRoot" transform="translate(596,380)">
+        <g id="whaleAnim">
+          <g transform="scale(12.766) translate(-0.163,-1.75)">
+            <path id="whaleFill" d="%%WHALE_D%%" fill="url(#whaleFillGrad)" fill-opacity="0"/>
+            <path id="rimWide" d="%%WHALE_D%%" fill="none" stroke="#5C8DFF" stroke-width=".58" stroke-linejoin="round" stroke-linecap="round" opacity="0"/>
+            <path id="rimCore" d="%%WHALE_D%%" fill="none" stroke="url(#whaleRimGrad)" stroke-width=".13" stroke-linejoin="round" stroke-linecap="round" opacity="0"/>
+          </g>
+        </g>
+      </g>
+      <g id="wordG" opacity="0" transform="translate(988,466) scale(3)">
+        <g fill="url(#wmGrad)" transform="translate(-31,0)">%%WORDMARK%%</g>
+      </g>
+    </g>
+  </svg>
+  <canvas id="ink" width="1920" height="1080"></canvas>
+  <div id="sub">探索未至之境</div>
+  <button id="again" type="button">换一个名字</button>
+  <div id="launcher">
+    <form id="launchForm" autocomplete="off">
+      <div class="eyebrow">DEEPSEEK · 开屏</div>
+      <label class="field"><span>用户名</span><input id="nameInput" maxlength="24" placeholder="Deepseek" spellcheck="false"></label>
+      <label class="field"><span>问候语</span><input id="greetInput" maxlength="44" value="Hello {name}" spellcheck="false"></label>
+      <div class="field fontRow"><span>字体</span>
+        <div class="chips" id="fontChips"></div>
+      </div>
+      <div class="preview"><span>预览</span><canvas id="previewCv" width="1040" height="140"></canvas></div>
+      <div class="err" id="errMsg"></div>
+      <button id="playBtn" type="submit">生成开屏</button>
+      <div class="hint">Enter 生成 · 支持中英文 · {name} 代表用户名</div>
+      <div class="themes" id="themeSwitch">
+        <button type="button" data-theme="dark">深色</button>
+        <button type="button" data-theme="light">浅色</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+window.addEventListener('error',function(e){document.documentElement.setAttribute('data-err',String(e.message)+' @'+(e.lineno||0));});
+/* ---------------- constants ---------------- */
+const W=1920,H=1080;
+const DPR=Math.min(1.5,window.devicePixelRatio||1);
+const MAX_TEXT_W=1400, MIN_FONT=52;
+const FONTS=%%STROKEFONTS%%;
+const FONT_KEYS=Object.keys(FONTS);
+const FALLBACK_STACK='"KaiTi","STKaiti","Kaiti SC","Segoe UI","Microsoft YaHei","Noto Sans SC",sans-serif';
+
+/* ---------------- theme ----------------
+   浅色全部取 DeepSeek 官方设计令牌（www.deepseek.com 的 CSS 变量）：
+   deepseek-50 #edf3fe / 100 #e4edfd / 300 #b7c8fe / 400 #679efe / 450 #5686fe / 500 #3964fe（品牌主蓝，与官方字标 SVG 同值）/ 900 #283142
+   neutral-00 #fff / 50 #fafafa / 150 #ededed / 200 #e5e5e5 / 400 #a2a4a6 / 500 #7f8287 / 600 #545557
+   浅底官方 logo mark 色 #3c3c43，深底官方 logo mark 色 #dfdfd6 */
+const THEMES={
+  dark:{
+    css:{
+      bg:'#000', sub:'#AEC1E2',
+      'halo-bg':'radial-gradient(circle at 50% 50%,rgba(62,104,255,.19) 0%,rgba(40,72,210,.075) 30%,rgba(20,40,120,.025) 48%,rgba(0,0,0,0) 66%)',
+      'launcher-bg':'#000', eyebrow:'#4f607e', label:'#5d6d8a',
+      input:'#F2F7FF', input2:'#CFE0FF', placeholder:'#33425c', line:'#23334e',
+      chip:'#8fa3c8', 'chip-hover':'#3b5380',
+      accent:'#4D6BFE', 'accent-hover':'#5f7bff', 'accent-soft':'rgba(77,107,254,.16)',
+      dash:'#1a263e', 'preview-label':'#42536f', err:'#ff7a90', hint:'#40506b',
+      again:'#5d6f8f', 'again-hover':'#9FB4DA'
+    },
+    ink:{ stops:[[0,'#F2F7FF'],[.55,'#DCE9FF'],[1,'#B4CBF5']], glow:'#6E9BFF', glowSteps:[[.17,.10],[.10,.15],[.045,.22]] },
+    whale:{ fill:[[0,'#B4CCFF'],[.42,'#7E9CFF'],[.78,'#5C77FA'],[1,'#4A60EA']], rimWide:'#5C8DFF',
+            rim:[[0,'#EAF2FF'],[.5,'#A9C6FF'],[1,'#7C9BFF']] },
+    word:[[0,'#FFFFFF'],[.62,'#EDF3FF'],[1,'#D3E0FF']],
+    pen:{ halo:['96,142,255','70,118,255','50,80,220'], core:['255,255,255','224,238,255','150,190,255'], dot:'255,255,255' },
+    outline:{ wide:'150,185,255', core:'242,248,255' },
+    sample:'#8fa3c8', sampleOn:'#FFFFFF', previewInk:'#B9CCEC'
+  },
+  light:{
+    css:{
+      bg:'#ffffff', sub:'#7f8287',
+      'halo-bg':'radial-gradient(circle at 50% 50%,rgba(57,100,254,.10) 0%,rgba(57,100,254,.045) 32%,rgba(57,100,254,.015) 50%,rgba(255,255,255,0) 68%)',
+      'launcher-bg':'#ffffff', eyebrow:'#a2a4a6', label:'#7f8287',
+      input:'#3c3c43', input2:'#545557', placeholder:'#a2a4a6', line:'#e5e5e5',
+      chip:'#7f8287', 'chip-hover':'#3964fe',
+      accent:'#3964fe', 'accent-hover':'#5686fe', 'accent-soft':'rgba(57,100,254,.10)',
+      dash:'#ededed', 'preview-label':'#a2a4a6', err:'#dd8629', hint:'#a2a4a6',
+      again:'#a2a4a6', 'again-hover':'#3964fe'
+    },
+    ink:{ stops:[[0,'#4A4A52'],[.55,'#3C3C43'],[1,'#283142']], glow:'#C7D7FE', glowSteps:[[.12,.05],[.07,.06],[.03,.08]] },
+    whale:{ fill:[[0,'#B7C8FE'],[.42,'#679EFE'],[.78,'#5686FE'],[1,'#3964FE']], rimWide:'#B7C8FE',
+            rim:[[0,'#EDF3FE'],[.5,'#93C5FD'],[1,'#3964FE']] },
+    word:[[0,'#3964FE'],[.62,'#3964FE'],[1,'#5686FE']],
+    pen:{ halo:['57,100,254','103,158,254','183,200,254'], core:['57,100,254','86,134,254','183,200,254'], dot:'57,100,254' },
+    outline:{ wide:'103,158,254', core:'57,100,254' },
+    sample:'#7f8287', sampleOn:'#3964FE', previewInk:'#3c3c43'
+  }
+};
+const DEFAULT_THEME='%%THEME_DEFAULT%%';
+let themeKey=DEFAULT_THEME, THEME=THEMES[themeKey]||THEMES.dark;
+function setStops(grad,stops){
+  if(!grad) return;
+  const kids=grad.querySelectorAll('stop');
+  stops.forEach((st,i)=>{ if(kids[i]) kids[i].setAttribute('stop-color',st[1]); });
+}
+function updateThemeSwitch(){ themeBtns.forEach(b=>b.classList.toggle('on',b.dataset.theme===themeKey)); }
+function applyTheme(k){
+  themeKey=THEMES[k]?k:DEFAULT_THEME; THEME=THEMES[themeKey];
+  const st=document.documentElement.style;
+  for(const p in THEME.css) st.setProperty('--'+p, THEME.css[p]);
+  document.documentElement.setAttribute('data-theme',themeKey);
+  setStops(whaleFillGrad,THEME.whale.fill);
+  setStops(whaleRimGrad,THEME.whale.rim);
+  setStops(wmGrad,THEME.word);
+  if(rimWide) rimWide.setAttribute('stroke',THEME.whale.rimWide);
+  updateThemeSwitch(); updateFontChips(); updatePreview();
+}
+let fontKey=FONT_KEYS[0];
+let TEXT='';
+const WHALE_X=596,WHALE_Y=380,WHALE_W=340,WHALE_S=WHALE_W/26.634;
+const WM_X=988,WM_Y=466,WM_SCALE=3;
+const CENTER_DX=960-(WHALE_X+WHALE_W/2);
+
+/* timeline (derived from text width in applyTimeline) */
+let T0=0.78,W_START=1.0,W_END=6.1,PEN_OUT=6.62,FADE_S=7.62,FADE_E=8.42,
+    D_START=8.28,D_END=10.34,FILL_S=10.4,FILL_E=11.24,RIM_S=10.96,RIM_E=11.5,
+    WORD_S=11.05,WORD_E=11.95,SUB_S=12.08,SUB_E=12.98,HOP_S=12.14,HOP_E=13.02,
+    HALO_E=13.2,HALO_T=12.4,SWAY_T=11.9,SWAY_E=13.4,END=16.2;
+function applyTimeline(){
+  const dur=clamp(writeDur,2.6,6.4);
+  W_START=1.0; W_END=W_START+dur;
+  PEN_OUT=W_END+0.52;
+  FADE_S=W_END+1.52; FADE_E=FADE_S+0.8;
+  D_START=FADE_E-0.14; D_END=D_START+2.06;
+  FILL_S=D_END+0.06; FILL_E=FILL_S+0.84;
+  RIM_S=FILL_E-0.28; RIM_E=RIM_S+0.54;
+  WORD_S=FILL_E-0.19; WORD_E=WORD_S+0.9;
+  SUB_S=WORD_E+0.13; SUB_E=SUB_S+0.9;
+  HOP_S=SUB_S+0.06; HOP_E=HOP_S+0.88;
+  HALO_T=SUB_S+0.32; HALO_E=SUB_E+0.22;
+  SWAY_T=HOP_S-0.24; SWAY_E=HOP_E+0.38;
+  T0=W_START-0.22;
+  END=SUB_E+3.2;
+}
+
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const easeOut=x=>1-Math.pow(1-x,3);
+const easeInOut=x=>-(Math.cos(Math.PI*x)-1)/2;
+
+/* ---------------- dom ---------------- */
+const stage=document.getElementById('stage');
+const halo=document.getElementById('halo');
+const canvas=document.getElementById('ink');
+const ctx=canvas.getContext('2d');
+const lockupSvg=document.getElementById('lockupSvg');
+const lockupG=document.getElementById('lockupG');
+const whaleAnim=document.getElementById('whaleAnim');
+const whaleRoot=document.getElementById('whaleRoot');
+const whaleFill=document.getElementById('whaleFill');
+const rimWide=document.getElementById('rimWide');
+const rimCore=document.getElementById('rimCore');
+const wordG=document.getElementById('wordG');
+const whaleFillGrad=document.getElementById('whaleFillGrad');
+const whaleRimGrad=document.getElementById('whaleRimGrad');
+const wmGrad=document.getElementById('wmGrad');
+const themeSwitch=document.getElementById('themeSwitch');
+const themeBtns=themeSwitch?[...themeSwitch.querySelectorAll('button')]:[];
+const sub=document.getElementById('sub');
+const again=document.getElementById('again');
+const launcher=document.getElementById('launcher');
+const launchForm=document.getElementById('launchForm');
+const nameInput=document.getElementById('nameInput');
+const greetInput=document.getElementById('greetInput');
+const previewCv=document.getElementById('previewCv');
+const errMsg=document.getElementById('errMsg');
+const fontChips=document.getElementById('fontChips');
+
+canvas.width=Math.round(W*DPR); canvas.height=Math.round(H*DPR);
+
+/* ---------------- stage fit ---------------- */
+function fit(){
+  const s=Math.min(window.innerWidth/W,window.innerHeight/H);
+  stage.style.transform='translate(-50%,-50%) scale('+s+')';
+}
+window.addEventListener('resize',fit); fit();
+
+/* ---------------- offscreen ---------------- */
+const ink=document.createElement('canvas'); ink.width=canvas.width; ink.height=canvas.height;
+const inkCtx=ink.getContext('2d');
+const mask=document.createElement('canvas'); mask.width=canvas.width; mask.height=canvas.height;
+const maskCtx=mask.getContext('2d');
+maskCtx.setTransform(DPR,0,0,DPR,0,0);
+
+let whalePts=null,whaleJumps=null;
+/* handwriting state: ordered stroke bands (stage px) */
+let strokes=null, stTotal=0, stCount=0, writeDur=4, inkPx=150;
+
+/* ---------------- handwriting: stroke engine ----------------
+   Fonts are stroke databases: glyph -> strokes of [x,y,brushWidth] points
+   (em units, y grows downward, y=0 is the baseline). */
+/* punctuation a font lacks is borrowed from any other stroke font (e.g. "·") */
+function borrowGlyph(ch){
+  for(const k of FONT_KEYS){ const g=FONTS[k].g[ch]; if(g) return {g,u:FONTS[k].u}; }
+  return null;
+}
+
+/* lay the text out at unit scale (1em) */
+function layoutEm(text){
+  const f=FONTS[fontKey];
+  let x=0, minX=1e9, maxX=-1e9, minY=1e9, maxY=-1e9;
+  const items=[];
+  for(const ch of text){
+    if(ch===' '){ x+=0.30; continue; }
+    let g=f.g[ch], gu=f.u;
+    if(!g){ const alt=borrowGlyph(ch); if(alt){ g=alt.g; gu=alt.u; } }
+    if(!g){
+      const cjk=ch.codePointAt(0)>0x2e80;
+      const fw=cjk?1.0:0.62, fh=cjk?1.0:0.78;
+      items.push({fb:ch,x,fw,fh});
+      if(x<minX)minX=x; if(x+fw>maxX)maxX=x+fw;
+      if(-fh*0.95<minY)minY=-fh*0.95;
+      if(0.12>maxY)maxY=0.12;
+      x+=fw; continue;
+    }
+    const inv=1/gu;
+    for(const flat of g.s){
+      const pts=[];
+      for(let i=0;i<flat.length;i+=3){
+        const X=x+flat[i]*inv, Y=flat[i+1]*inv, Wd=Math.max(flat[i+2]*inv,0.008);
+        pts.push([X,Y,Wd]);
+        if(X<minX)minX=X; if(X>maxX)maxX=X; if(Y<minY)minY=Y; if(Y>maxY)maxY=Y;
+      }
+      items.push({pts});
+    }
+    x+=g.w*inv;
+  }
+  if(minX>maxX){ minX=0; maxX=Math.max(x,0.3); minY=-0.8; maxY=0.2; }
+  return {items,width:x,minX,maxX,minY,maxY};
+}
+
+let whaleBuilt=false, lastBuildMs=0, lastWhaleMs=0;
+
+/* build stroke list + ink canvas + writing duration for TEXT */
+function buildText(){
+  const bt0=performance.now();
+  let L=layoutEm(TEXT);
+  let wEm=Math.max(0.02,L.maxX-L.minX);
+  let px=150;
+  if(wEm*px>MAX_TEXT_W) px=Math.floor(MAX_TEXT_W/wEm);
+  else if(wEm*px<980) px=Math.min(200,Math.round(1100/wEm));
+  px=clamp(px,MIN_FONT,210);
+  /* extremely long text: trim with an ellipsis so it stays inside the stage */
+  if(wEm*px>MAX_TEXT_W*1.02){
+    const base=TEXT;
+    let n=base.length;
+    while(n>6){
+      n--;
+      TEXT=base.slice(0,n)+'…';
+      L=layoutEm(TEXT);
+      wEm=Math.max(0.02,L.maxX-L.minX);
+      px=clamp(Math.floor(MAX_TEXT_W/wEm),MIN_FONT,210);
+      if(wEm*px<=MAX_TEXT_W*1.02) break;
+    }
+  }
+  inkPx=px;
+  const ox=(W-(L.minX+L.maxX)*px)/2;
+  const oy=536-((L.minY+L.maxY)*px)/2;
+  const list=[]; const fbs=[]; let total=0;
+  for(const it of L.items){
+    if(it.fb){
+      const w=px*it.fw, h=px*it.fh, fx=ox+it.x*px;
+      list.push({pts:[[fx,oy-h*0.45,h],[fx+w,oy-h*0.45,h]],len:w,fb:true});
+      total+=w;
+      fbs.push({ch:it.fb,x:fx,y:oy,px:px});
+      continue;
+    }
+    const pts=it.pts.map(p=>[ox+p[0]*px, oy+p[1]*px, p[2]*px]);
+    let len=0;
+    for(let i=1;i<pts.length;i++) len+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+    list.push({pts,len}); total+=len;
+  }
+  for(const s of list){ const bb=newBox(); for(const p of s.pts) grow(bb,p[0],p[1],p[2]*0.5+2); s.bb=bb; }
+  strokes=list; revLen=new Float32Array(list.length);
+  stTotal=total; stCount=list.length;
+  writeDur=clamp(total/(px*2.15)+stCount*0.035, 2.6, 6.4);
+  maskReset=true;
+  buildInkCanvas(L,ox,oy,px,fbs);
+  const bInk=performance.now();
+  if(!whaleBuilt){ buildWhalePath(); whaleBuilt=true; }
+  lastWhaleMs=performance.now()-bInk;
+  lastBuildMs=performance.now()-bt0;
+}
+
+/* draw a stroke band; upto = how much length to reveal (default all) */
+function drawBands(c,pts,upto){
+  let remaining=(upto===undefined?Infinity:upto);
+  c.lineCap='round'; c.lineJoin='round'; c.strokeStyle='#fff';
+  let lx=pts[0][0], ly=pts[0][1];
+  for(let i=1;i<pts.length;i++){
+    if(remaining<=0) break;
+    const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1];
+    const seg=Math.hypot(dx,dy)||1e-6;
+    const f=seg>remaining?remaining/seg:1;
+    const nx=pts[i-1][0]+dx*f, ny=pts[i-1][1]+dy*f;
+    c.lineWidth=Math.max(1.1,(pts[i][2]+pts[i-1][2])/2);
+    c.beginPath(); c.moveTo(lx,ly); c.lineTo(nx,ny); c.stroke();
+    lx=nx; ly=ny;
+    remaining-=seg*f;
+  }
+}
+/* same band, widened by `extra` px — used to stack a soft glow without a blur filter */
+function drawBandsWide(c,pts,extra){
+  let lx=pts[0][0], ly=pts[0][1];
+  for(let i=1;i<pts.length;i++){
+    c.lineWidth=Math.max(1.1,(pts[i][2]+pts[i-1][2])/2+extra);
+    c.beginPath(); c.moveTo(lx,ly); c.lineTo(pts[i][0],pts[i][1]); c.stroke();
+    lx=pts[i][0]; ly=pts[i][1];
+  }
+}
+function newLayer(){
+  const k=document.createElement('canvas'); k.width=ink.width; k.height=ink.height;
+  const kc=k.getContext('2d'); kc.setTransform(DPR,0,0,DPR,0,0);
+  kc.lineCap='round'; kc.lineJoin='round';
+  return {c:k,ctx:kc};
+}
+/* Ink is built without canvas filter blurs (a full-canvas blur cost ~1.8s):
+   the glow is the same strokes stacked from wide/faint to narrow/strong. */
+function buildInkCanvas(L,ox,oy,px,fbs){
+  const glow=newLayer(), core=newLayer();
+  const steps=THEME.ink.glowSteps.map(s=>[s[0]*px,s[1]]);
+  for(const step of steps){
+    glow.ctx.globalAlpha=step[1]; glow.ctx.strokeStyle=THEME.ink.glow;
+    for(const s of strokes) if(!s.fb) drawBandsWide(glow.ctx,s.pts,step[0]);
+  }
+  glow.ctx.globalAlpha=1;
+  core.ctx.strokeStyle='#fff';
+  for(const s of strokes) if(!s.fb) drawBandsWide(core.ctx,s.pts,0);
+  if(fbs.length){
+    for(const layer of [glow,core]){
+      layer.ctx.font=px+'px '+FALLBACK_STACK; layer.ctx.textBaseline='alphabetic'; layer.ctx.textAlign='left';
+    }
+    core.ctx.fillStyle='#fff';
+    glow.ctx.strokeStyle=THEME.ink.glow;
+    for(const step of steps){
+      glow.ctx.globalAlpha=step[1]; glow.ctx.lineWidth=step[0]*2;
+      for(const fb of fbs) glow.ctx.strokeText(fb.ch,fb.x,fb.y);
+    }
+    glow.ctx.globalAlpha=1;
+    for(const fb of fbs) core.ctx.fillText(fb.ch,fb.x,fb.y);
+  }
+  inkCtx.setTransform(DPR,0,0,DPR,0,0); inkCtx.clearRect(0,0,W,H);
+  inkCtx.save(); inkCtx.globalCompositeOperation='lighter'; inkCtx.drawImage(glow.c,0,0,W,H); inkCtx.restore();
+  inkCtx.save();
+  inkCtx.drawImage(core.c,0,0,W,H);
+  inkCtx.globalCompositeOperation='source-in';
+  const g=inkCtx.createLinearGradient(0,oy-px*0.95,0,oy+px*0.3);
+  for(const st of THEME.ink.stops) g.addColorStop(st[0],st[1]);
+  inkCtx.fillStyle=g; inkCtx.fillRect(0,0,W,H);
+  inkCtx.restore();
+}
+
+/* reveal progress along the ordered strokes, with a short pause between strokes.
+   Only the pixels revealed since the previous frame are touched (dirty rect). */
+function revealU(t){
+  const u=clamp((t-W_START)/(W_END-W_START),0,1);
+  return 0.16*u+0.84*easeInOut(u);
+}
+let revealedCost=0, maskReset=true, revLen=null;
+function revealCost(t){ return t<W_START-0.02?0:revealU(t)*(stTotal+inkPx*0.10*stCount); }
+function newBox(){ return {x0:1e9,y0:1e9,x1:-1e9,y1:-1e9}; }
+function grow(box,x,y,p){ if(x-p<box.x0)box.x0=x-p; if(x+p>box.x1)box.x1=x+p; if(y-p<box.y0)box.y0=y-p; if(y+p>box.y1)box.y1=y+p; }
+
+/* bbox of the polyline portion between arc lengths from..to (no drawing) */
+function rangeBox(pts,from,to,box){
+  let acc=0;
+  for(let i=1;i<pts.length;i++){
+    const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1];
+    const seg=Math.hypot(dx,dy)||1e-6;
+    const s0=acc, s1=acc+seg; acc=s1;
+    if(s1<=from) continue;
+    if(s0>=to) break;
+    const f0=s0<=from?(from-s0)/seg:0;
+    const f1=s1>=to?(to-s0)/seg:1;
+    const w=(pts[i][2]+pts[i-1][2])/2*0.5+2;
+    grow(box,pts[i-1][0]+dx*f0,pts[i-1][1]+dy*f0,w);
+    grow(box,pts[i-1][0]+dx*f1,pts[i-1][1]+dy*f1,w);
+  }
+}
+/* draw one polyline portion with round caps only at the two cut ends */
+function drawBandsRange(c,pts,from,to){
+  let acc=0;
+  for(let i=1;i<pts.length;i++){
+    const dx=pts[i][0]-pts[i-1][0], dy=pts[i][1]-pts[i-1][1];
+    const seg=Math.hypot(dx,dy)||1e-6;
+    const s0=acc, s1=acc+seg; acc=s1;
+    if(s1<=from) continue;
+    if(s0>=to) break;
+    const f0=s0<=from?(from-s0)/seg:0;
+    const f1=s1>=to?(to-s0)/seg:1;
+    c.lineWidth=Math.max(1.1,(pts[i][2]+pts[i-1][2])/2);
+    c.beginPath();
+    c.moveTo(pts[i-1][0]+dx*f0,pts[i-1][1]+dy*f0);
+    c.lineTo(pts[i-1][0]+dx*f1,pts[i-1][1]+dy*f1);
+    c.stroke();
+  }
+}
+/* advance how much of each stroke is revealed; collect the bbox of the new pixels */
+function advanceReveal(from,to,box){
+  const lift=inkPx*0.10;
+  let acc=0;
+  for(let i=0;i<strokes.length;i++){
+    const s=strokes[i], cost=s.len+lift;
+    if(acc+cost<=from){ acc+=cost; continue; }
+    if(acc>=to) break;
+    const a=Math.max(0,from-acc), b=Math.min(s.len,to-acc);
+    if(b>a){ revLen[i]=Math.max(revLen[i],b); rangeBox(s.pts,a,b,box); }
+    acc+=cost;
+  }
+}
+/* The mask is never accumulated: the dirty rect is cleared and every stroke touching it is
+   repainted once, from 0 to its revealed length. Drawing a stroke in one piece (instead of a
+   new cap-ended snippet each frame) keeps antialiased edges from double-compositing into beads. */
+function paintRect(core){
+  if(core.x1<=core.x0||core.y1<=core.y0) return;
+  const pad=46;
+  const x=Math.max(0,Math.floor(core.x0-pad)), y=Math.max(0,Math.floor(core.y0-pad));
+  const x1=Math.min(W,Math.ceil(core.x1+pad)), y1=Math.min(H,Math.ceil(core.y1+pad));
+  const w=x1-x, h=y1-y;
+  if(w<=0||h<=0) return;
+  maskCtx.setTransform(DPR,0,0,DPR,0,0);
+  maskCtx.save();
+  maskCtx.beginPath(); maskCtx.rect(x,y,w,h); maskCtx.clip();
+  maskCtx.clearRect(x,y,w,h);
+  maskCtx.lineCap='round'; maskCtx.lineJoin='round'; maskCtx.strokeStyle='#fff';
+  for(let i=0;i<strokes.length;i++){
+    if(revLen[i]<=0) continue;
+    const bb=strokes[i].bb;
+    if(bb.x1<x||bb.x0>x+w||bb.y1<y||bb.y0>y+h) continue;
+    drawBandsRange(maskCtx,strokes[i].pts,0,revLen[i]);
+  }
+  maskCtx.restore();
+  ctx.save();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  /* destination-in is a GLOBAL composite: clip it to the rect, or it wipes the rest of the canvas */
+  ctx.beginPath(); ctx.rect(x,y,w,h); ctx.clip();
+  ctx.clearRect(x,y,w,h);
+  ctx.drawImage(ink,x*DPR,y*DPR,w*DPR,h*DPR,x,y,w,h);
+  ctx.globalCompositeOperation='destination-in';
+  ctx.drawImage(mask,x*DPR,y*DPR,w*DPR,h*DPR,x,y,w,h);
+  ctx.restore();
+}
+function resetInk(){
+  maskCtx.setTransform(DPR,0,0,DPR,0,0); maskCtx.clearRect(0,0,W,H);
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H);
+  if(revLen) revLen.fill(0);
+  revealedCost=0; maskReset=false;
+}
+function drawText(t){
+  if(!strokes) return;
+  if(maskReset) resetInk();
+  const target=revealCost(t);
+  if(target<revealedCost-0.5) resetInk();
+  if(target<=revealedCost) return;
+  const box=newBox();
+  advanceReveal(revealedCost,target,box);
+  revealedCost=target;
+  paintRect(box);
+}
+/* ---------------- whale path ---------------- */
+/* Points are precomputed from the official path at build time (src/whalepoints.json):
+   sampling 1500 points with getPointAtLength costs ~1.5s at runtime. */
+const WHALE_N=%%WHALE_N%%, WHALE_RAW=%%WHALE_PTS%%;
+function buildWhalePath(){
+  const N=WHALE_N, pts=new Float32Array(N*2), jump=new Uint8Array(N);
+  for(let i=0;i<N;i++){
+    const px=WHALE_RAW[i*2], py=WHALE_RAW[i*2+1];
+    pts[i*2]=WHALE_X+(px-0.163)*WHALE_S;
+    pts[i*2+1]=WHALE_Y+(py-1.75)*WHALE_S;
+    if(i>0){
+      const dx=pts[i*2]-pts[i*2-2], dy=pts[i*2+1]-pts[i*2-1];
+      if(dx*dx+dy*dy>16) jump[i]=1;
+    }
+  }
+  whalePts=pts; whaleJumps=jump;
+  jump[0]=1; /* the path's end→start is a pen lift, not a line */
+  /* start the stroke at the top of the body (left half) */
+  const bodyMaxX=WHALE_X+13*WHALE_S;
+  let k=0,best=1e9,bestX=1e9;
+  for(let i=0;i<N;i++){
+    const y=pts[i*2+1], x=pts[i*2];
+    if(x>bodyMaxX) continue;
+    if(y<best-0.5 || (Math.abs(y-best)<=0.5 && x<bestX)){ best=y; bestX=x; k=i; }
+  }
+  const pts2=new Float32Array(N*2), jmp2=new Uint8Array(N);
+  for(let i=0;i<N;i++){
+    const j=(k+i)%N;
+    pts2[i*2]=pts[j*2]; pts2[i*2+1]=pts[j*2+1];
+    jmp2[i]= i===0?1:jump[j];
+  }
+  whalePts=pts2; whaleJumps=jmp2;
+}
+
+/* ---------------- drawing ---------------- */
+function drawPen(x,y,alpha){
+  if(alpha<=0.001) return;
+  const P=THEME.pen;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  let g=ctx.createRadialGradient(x,y,0,x,y,110);
+  g.addColorStop(0,'rgba('+P.halo[0]+','+(.26*alpha)+')');
+  g.addColorStop(.35,'rgba('+P.halo[1]+','+(.10*alpha)+')');
+  g.addColorStop(1,'rgba('+P.halo[2]+',0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,110,0,6.2832); ctx.fill();
+
+  g=ctx.createRadialGradient(x,y,0,x,y,20);
+  g.addColorStop(0,'rgba('+P.core[0]+','+(.95*alpha)+')');
+  g.addColorStop(.3,'rgba('+P.core[1]+','+(.7*alpha)+')');
+  g.addColorStop(1,'rgba('+P.core[2]+',0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,20,0,6.2832); ctx.fill();
+
+  ctx.fillStyle='rgba('+P.dot+','+(.92*alpha)+')';
+  ctx.beginPath(); ctx.arc(x,y,2.1,0,6.2832); ctx.fill();
+  ctx.restore();
+}
+
+function drawWhaleOutline(t,dx){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,W,H);
+  if(t>RIM_E) return;
+  ctx.translate(dx,0);
+  const u=clamp((t-D_START)/(D_END-D_START),0,1);
+  const p=easeInOut(u);
+  const n=Math.max(2,Math.floor(p*(whalePts.length/2-1)))+1;
+  const fade=1-smooth(RIM_S,RIM_E,t);
+
+  ctx.save();
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const passes=[[10,0.14],[5.5,0.30],[2.6,0.85],[1.1,1]];
+  for(const [w,a] of passes){
+    ctx.beginPath();
+    ctx.moveTo(whalePts[0],whalePts[1]);
+    for(let i=1;i<n;i++){ if(whaleJumps[i]) ctx.moveTo(whalePts[i*2],whalePts[i*2+1]); else ctx.lineTo(whalePts[i*2],whalePts[i*2+1]); }
+    ctx.strokeStyle='rgba('+(w<1.2?THEME.outline.core:THEME.outline.wide)+','+(a*fade)+')';
+    ctx.lineWidth=w;
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  /* pen head during the draw */
+  if(t>D_START-0.02 && t<D_END+0.35){
+    const idx=Math.min(n-1,Math.floor(p*(whalePts.length/2-1)));
+    const hx=whalePts[idx*2], hy=whalePts[idx*2+1];
+    const pa=smooth(D_START-0.05,D_START+0.24,t)*(1-smooth(D_END,D_END+0.3,t));
+    if(t>D_END){ const l=clamp((t-D_END)/0.32,0,1); drawPen(hx+l*8,hy-l*6,1-l); }
+    else drawPen(hx,hy,pa);
+  }
+}
+
+/* ---------------- whale motion ---------------- */
+function whaleDx(t){ return CENTER_DX*(1-smooth(FILL_S+0.1,FILL_S+1.2,t)); }
+function whaleTransform(t){
+  const dx=whaleDx(t);
+  aset(lockupG,'transform','translate('+dx.toFixed(2)+',0)');
+  let hop=0, ang=0, dy=0;
+  if(t>HOP_S){
+    const u=clamp((t-HOP_S)/(HOP_E-HOP_S),0,1);
+    hop=-9*Math.sin(Math.PI*u)*Math.sin(Math.PI*u);
+  }
+  if(t>SWAY_T){
+    const s=t-SWAY_T;
+    const ramp=smooth(SWAY_T,SWAY_E,t);
+    ang=1.05*ramp*Math.sin(2*Math.PI*s/4.6);
+    dy=1.6*ramp*Math.sin(2*Math.PI*s/4.6+0.7);
+  }
+  const cx=WHALE_W*0.36, cy=WHALE_W*(19.6/26.634)*0.66;
+  aset(whaleAnim,'transform','translate(0 '+(hop+dy).toFixed(2)+') rotate('+ang.toFixed(3)+' '+cx.toFixed(1)+' '+cy.toFixed(1)+')');
+}
+
+/* ---------------- master render ---------------- */
+let cleared=false, againShown=false;
+/* cached DOM writes: skip when the value is unchanged, so idle frames do no style work */
+function sset(el,prop,val){ const k='_s_'+prop; if(el[k]===val) return; el[k]=val; el.style[prop]=val; }
+function aset(el,attr,val){ const k='_a_'+attr; if(el[k]===val) return; el[k]=val; el.setAttribute(attr,val); }
+const workD=[];
+function render(t){
+  const t0=PERF?performance.now():0;
+  /* handwriting canvas */
+  if(t<FADE_E){
+    const f=smooth(FADE_S,FADE_E,t);
+    sset(canvas,'opacity',String(1-f));
+    sset(canvas,'transform','translateY('+(-14*f).toFixed(2)+'px)');
+    drawText(t);
+    cleared=false;
+  }else{
+    sset(canvas,'transform','translateY(0)');
+    sset(canvas,'opacity','1');
+    if(t<RIM_E+0.1){ drawWhaleOutline(t,whaleDx(t)); cleared=false; }
+    else if(!cleared){ ctx.setTransform(DPR,0,0,DPR,0,0); ctx.clearRect(0,0,W,H); cleared=true; }
+  }
+
+  /* whale fill / rim / wordmark / subtitle */
+  const fillP=easeOut(clamp((t-FILL_S)/(FILL_E-FILL_S),0,1));
+  aset(whaleFill,'fill-opacity',fillP.toFixed(4));
+  const rimP=smooth(RIM_S,RIM_E,t);
+  aset(rimWide,'opacity',(0.22*rimP).toFixed(3));
+  aset(rimCore,'opacity',(0.92*rimP).toFixed(3));
+
+  const wu=clamp((t-WORD_S)/(WORD_E-WORD_S),0,1);
+  const we=easeOut(wu);
+  aset(wordG,'opacity',we.toFixed(4));
+  aset(wordG,'transform','translate('+(WM_X+18*(1-we)).toFixed(2)+','+WM_Y+') scale('+WM_SCALE+')');
+
+  const su=clamp((t-SUB_S)/(SUB_E-SUB_S),0,1);
+  const se=easeOut(su);
+  sset(sub,'opacity',String(se));
+  sset(sub,'transform','translateY('+(10*(1-se)).toFixed(2)+'px)');
+  sset(sub,'letterSpacing',(0.62-0.2*se).toFixed(3)+'em');
+  sset(sub,'textIndent',(0.62-0.2*se).toFixed(3)+'em');
+
+  /* halo breathing */
+  if(t>FILL_S+0.4){
+    const base=smooth(FILL_S+0.4,HALO_E,t);
+    const s=t-HALO_T;
+    const breath=0.5+0.5*Math.sin(2*Math.PI*s/5.4);
+    const hAlpha=base*(0.62+0.16*breath);
+    const sc=1+0.035*(breath-0.5)*2*base;
+    sset(halo,'opacity',hAlpha.toFixed(4));
+    sset(halo,'transform','scale('+sc.toFixed(4)+')');
+  }else{
+    sset(halo,'opacity','0');
+  }
+
+  whaleTransform(t);
+
+  if(!seek && t>SUB_E+1.4){ if(!againShown){ again.classList.add('show'); againShown=true; } }
+  else if(againShown){ again.classList.remove('show'); againShown=false; }
+
+  if(PERF){ const d=performance.now()-t0; if(d<200) workD.push(d); }
+}
+
+/* ---------------- clock ---------------- */
+const params=new URLSearchParams(location.search);
+const tRaw=parseFloat(params.get('t'));
+const seek=Number.isFinite(tRaw)?tRaw:null;
+const urlName=(params.get('name')||'').trim();
+const urlGreet=params.get('greet')||'';
+let started=0,running=false,raf=0,lastT=0,launcherActive=true;
+const PERF=params.has('perf');
+const perfD=[];let lastNow=0;
+const reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function tick(now){
+  if(!running) return;
+  if(PERF&&lastNow){ const d=now-lastNow; if(d>0&&d<200) perfD.push(d); }
+  lastNow=now;
+  const t=(now-started)/1000;
+  lastT=t;
+  render(t);
+  raf=requestAnimationFrame(tick);
+}
+function startSplash(){
+  cancelAnimationFrame(raf);
+  maskReset=true;
+  againShown=false; again.classList.remove('show');
+  started=performance.now(); running=true; lastT=0; lastNow=0;
+  render(0);
+  raf=requestAnimationFrame(tick);
+}
+function replay(){ if(!launcherActive) startSplash(); }
+
+/* ---------------- launcher ---------------- */
+function finalTextFrom(name,greet){
+  const n=(name||'').replace(/\s+/g,' ').trim();
+  const tmpl=(greet||'Hello {name}').replace(/\s+/g,' ').trim();
+  const t=tmpl.includes('{name}') ? tmpl.split('{name}').join(n) : tmpl;
+  return t.replace(/\s+/g,' ').trim();
+}
+
+/* draw a short string with the current stroke font into a small canvas */
+function drawSample(cv,text,fontKeyIn,px,color,fitW,fitH){
+  const key=fontKeyIn||fontKey, f=FONTS[key];
+  const c=cv.getContext('2d');
+  c.setTransform(1,0,0,1,0,0);
+  c.clearRect(0,0,cv.width,cv.height);
+  const save=fontKey;
+  fontKey=key;
+  const L=layoutEm(text);
+  fontKey=save;
+  const wEm=Math.max(0.02,L.maxX-L.minX), hEm=Math.max(0.02,L.maxY-L.minY);
+  let s=px||Math.min(fitW?fitW/wEm:1e9, fitH?fitH/hEm:1e9);
+  if(fitW&&wEm*s>fitW) s=fitW/wEm;
+  if(fitH&&hEm*s>fitH) s=Math.min(s,fitH/hEm);
+  const ox=(cv.width-(L.minX+L.maxX)*s)/2;
+  const oy=(cv.height-(L.minY+L.maxY)*s)/2;
+  c.lineCap='round'; c.lineJoin='round'; c.strokeStyle=color||THEME.sample;
+  const list=[];
+  for(const it of L.items){
+    if(it.fb) continue;
+    list.push(it.pts.map(p=>[ox+p[0]*s, oy+p[1]*s, Math.max(p[2]*s,0.8)]));
+  }
+  for(const pts of list) drawBandsStroked(c,pts);
+  return {s,w:wEm*s};
+}
+function drawBandsStroked(c,pts){
+  let lx=pts[0][0], ly=pts[0][1];
+  for(let i=1;i<pts.length;i++){
+    c.lineWidth=Math.max(0.8,(pts[i][2]+pts[i-1][2])/2);
+    c.beginPath(); c.moveTo(lx,ly); c.lineTo(pts[i][0],pts[i][1]); c.stroke();
+    lx=pts[i][0]; ly=pts[i][1];
+  }
+}
+
+function updatePreview(){
+  const t=finalTextFrom(nameInput.value,greetInput.value);
+  errMsg.textContent='';
+  const cv=previewCv, c=cv.getContext('2d');
+  c.setTransform(1,0,0,1,0,0);
+  c.clearRect(0,0,cv.width,cv.height);
+  if(!t){ return; }
+  drawSample(cv,t,fontKey,0,THEME.previewInk,cv.width-70,cv.height-26);
+}
+
+/* font chips, each label drawn in its own stroke font */
+const chipEls=[];
+(function buildChips(){
+  FONT_KEYS.forEach((k,i)=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='chip'; b.dataset.font=k;
+    const cv=document.createElement('canvas');
+    cv.width=360; cv.height=56;
+    b.appendChild(cv);
+    b.addEventListener('click',()=>setFont(k));
+    fontChips.appendChild(b);
+    chipEls.push(b);
+    drawSample(cv,FONTS[k].n,k,0,THEME.sample,340,48);
+  });
+})();
+function updateFontChips(){
+  chipEls.forEach((b,i)=>{
+    const on=b.dataset.font===fontKey;
+    b.classList.toggle('on',on);
+    drawSample(b.firstChild,FONTS[b.dataset.font].n,b.dataset.font,0,on?THEME.sampleOn:THEME.sample,340,48);
+  });
+}
+function setFont(k){
+  if(!FONTS[k]) return;
+  fontKey=k;
+  updateFontChips();
+  updatePreview();
+}
+function submitName(e){
+  e.preventDefault();
+  const n=nameInput.value.trim();
+  if(!n){ errMsg.textContent='请输入用户名'; nameInput.focus(); return; }
+  const t=finalTextFrom(n,greetInput.value);
+  if(!t){ errMsg.textContent='问候语不能为空'; return; }
+  try{ localStorage.setItem('ds_name',n); localStorage.setItem('ds_greet',greetInput.value); localStorage.setItem('ds_font',fontKey); }catch(err){}
+  TEXT=t;
+  buildText();
+  if(!strokes||!strokes.length){ errMsg.textContent='无法生成，请换个文字试试'; return; }
+  applyTimeline();
+  launcherActive=false;
+  launcher.classList.add('gone');
+  setTimeout(()=>{ if(!launcherActive) launcher.style.display='none'; }, 460);
+  if(reduce){
+    running=false; cancelAnimationFrame(raf);
+    render(SUB_E+1.2);
+    againShown=true; again.classList.add('show');
+  }else{
+    startSplash();
+  }
+}
+function showLauncher(){
+  running=false; cancelAnimationFrame(raf);
+  launcherActive=true;
+  againShown=false; again.classList.remove('show');
+  launcher.style.display='flex';
+  requestAnimationFrame(()=>launcher.classList.remove('gone'));
+  nameInput.focus(); nameInput.select();
+}
+launchForm.addEventListener('submit',submitName);
+nameInput.addEventListener('input',updatePreview);
+greetInput.addEventListener('input',updatePreview);
+again.addEventListener('click',(e)=>{ e.stopPropagation(); showLauncher(); });
+themeBtns.forEach(b=>b.addEventListener('click',()=>{
+  applyTheme(b.dataset.theme);
+  try{ localStorage.setItem('ds_theme_'+DEFAULT_THEME,themeKey); }catch(err){}
+}));
+
+/* ---------------- boot ---------------- */
+(function(){
+  let savedName='Deepseek', savedGreet='Welcome to {name}', savedFont=FONT_KEYS[0], savedTheme=DEFAULT_THEME;
+  try{
+    savedName=localStorage.getItem('ds_name')||savedName;
+    savedGreet=localStorage.getItem('ds_greet')||savedGreet;
+    savedFont=localStorage.getItem('ds_font')||savedFont;
+    savedTheme=localStorage.getItem('ds_theme_'+DEFAULT_THEME)||savedTheme;
+  }catch(err){}
+  const urlTheme=(params.get('theme')||'').trim();
+  applyTheme(THEMES[urlTheme]?urlTheme:savedTheme);
+  const urlFont=(params.get('font')||'').trim();
+  fontKey=FONTS[urlFont]?urlFont:(FONTS[savedFont]?savedFont:FONT_KEYS[0]);
+  updateFontChips();
+  nameInput.value=urlName||savedName;
+  greetInput.value=urlGreet||savedGreet;
+  updatePreview();
+  document.documentElement.setAttribute('data-ready','1');
+  if(seek!==null || urlName){
+    TEXT=finalTextFrom(nameInput.value,greetInput.value);
+    buildText();
+    applyTimeline();
+    launcher.style.display='none';
+    launcherActive=false;
+    if(seek!==null) render(clamp(seek,0,END));
+    else if(reduce){ render(SUB_E+1.2); againShown=true; again.classList.add('show'); }
+    else startSplash();
+  }else{
+    render(0);
+    nameInput.focus();
+  }
+})();
+
+window.__seek=(t)=>{ maskReset=true; render(clamp(t,0,END)); };
+window.__info=()=>({TEXT,theme:themeKey,font:fontKey,px:inkPx,strokes:stCount,buildMs:+lastBuildMs.toFixed(1),whaleMs:+lastWhaleMs.toFixed(1),W_END,SUB_E,END});
+window.__perf=()=>{
+  const stat=a=>{ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); return {n:s.length,median:+s[Math.floor(s.length/2)].toFixed(2),p95:+s[Math.floor(s.length*0.95)].toFixed(2),max:+s[s.length-1].toFixed(2)}; };
+  const f=stat(perfD)||{};
+  return Object.assign({},f,{work:stat(workD)});
+};
+
+/* interactions */
+window.addEventListener('pointerdown',(e)=>{
+  if(launcherActive||seek!==null) return;
+  if(e.target.closest && e.target.closest('#again')) return;
+  replay();
+});
+window.addEventListener('keydown',(e)=>{
+  if(e.key==='Escape'){ if(!launcherActive) showLauncher(); return; }
+  if(launcherActive||seek!==null) return;
+  if(e.code==='Space'||e.key==='r'||e.key==='R'){ e.preventDefault(); replay(); }
+});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){ running=false; cancelAnimationFrame(raf); }
+  else if(!launcherActive && seek===null && !reduce && !running){
+    started=performance.now()-lastT*1000; lastNow=0; running=true; raf=requestAnimationFrame(tick);
+  }
+});
+})();
+</script>
+</body>
+</html>
+

@@ -1,0 +1,25 @@
+# 依赖与临时产物（本项目运行时零依赖，这里只挡开发期杂物）
+node_modules/
+package-lock.json
+*.log
+
+# 系统 / 编辑器
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# headless 截图与临时 profile（src/tools/cdp.mjs 会写系统临时目录，正常不会出现在这里）
+.cdp/
+*.tmp
+
+# 开发期视觉自检（截图 / harness / headless profile；脚本本身入库）
+_test/shots/
+_test/harness.html
+_test/client-harness.html
+_test/handoff.html
+_test/boot-cover-enabled.html
+_test/boot-cover-disabled.html
+_test/profile/
+_test/profile-client/

@@ -1,0 +1,10 @@
+# dsh-ink-whale bundle patch。
+#
+# 只插入本插件自己的 Loader 条目：patch 按 id 寻址并整段替换 config，
+# 提到无关条目会覆盖别人的配置。
+#
+# 条目 id 就是浏览器半读取设置表单用的命名空间；改这里要同步
+# index.js 的 INK_WHALE_ENTRY_ID 和 client.js 里的 ENTRY_ID_CANDIDATES。
+- insert:
+    - id: ink-whale
+      name: dsh-ink-whale

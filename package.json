@@ -1,0 +1,88 @@
+{
+  "name": "dsh-ink-whale",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness 手写墨迹开屏插件：按真实笔顺写出你的文字，收在鲸鱼锁标上；字体、文字与深浅色都在设置里配置。",
+  "type": "module",
+  "license": "MIT",
+  "author": "w-j-y-wjy",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/w-j-y-wjy/dsh-ink-whale.git"
+  },
+  "homepage": "https://github.com/w-j-y-wjy/dsh-ink-whale#readme",
+  "bugs": {
+    "url": "https://github.com/w-j-y-wjy/dsh-ink-whale/issues"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "splash",
+    "splash-screen",
+    "handwriting",
+    "stroke-order",
+    "ink",
+    "canvas"
+  ],
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "LICENSES",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md",
+    "docs/*.md",
+    "src/engine.js",
+    "src/client.template.js",
+    "src/build-plugin.mjs",
+    "src/build.mjs",
+    "src/template.html",
+    "src/data/*.json",
+    "src/tools/*.mjs",
+    "scripts/*.mjs",
+    "assets/demo-poster.png",
+    "assets/preview-light-final.png",
+    "assets/preview-dark-final.png",
+    "assets/preview-light-writing.png",
+    "assets/preview-dark-writing.png",
+    "assets/preview-light-launcher.png",
+    "assets/preview-dark-launcher.png",
+    "assets/plugin-settings.png"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true
+    }
+  },
+  "scripts": {
+    "build": "node src/build-plugin.mjs",
+    "build:standalone": "node src/build.mjs",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "devDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

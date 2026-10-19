@@ -1,0 +1,30 @@
+MIT License（仅适用于本项目的**代码**）
+
+Copyright (c) 2026 dsh-ink-whale contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================
+
+适用范围（看这一段就够）
+
+- MIT 覆盖：`src/template.html`、`src/build.mjs`、`src/tools/**`、`classic.html`、文档。
+- **不在 MIT 之内**（按各自许可分发）：
+  - `src/data/strokefonts.json` 及页面内嵌的同一份数据 → 7 套字体为 SIL OFL 1.1、Hershey Script 为其自有条款，见 [LICENSES/FONTS-ATTRIBUTION.md](LICENSES/FONTS-ATTRIBUTION.md) 与 [LICENSES/OFL-1.1.txt](LICENSES/OFL-1.1.txt)。
+  - `src/data/whale.svg`、`src/data/wordmark.svg`、`src/data/whalepoints.json`、`src/data/assets.json` 里的鲸鱼与字标路径 → **版权与商标归 DeepSeek 所有，本项目未获授权**，仅为演示/个人使用而包含；见 [NOTICE.md](NOTICE.md)。

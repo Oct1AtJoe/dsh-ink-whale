@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Ink Whale">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#10131c"/>
+      <stop offset="1" stop-color="#1b2440"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="12" y1="50" x2="54" y2="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EAF2FF"/>
+      <stop offset=".55" stop-color="#B4CCFF"/>
+      <stop offset="1" stop-color="#5C77FA"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+  <path d="M13 46.5c6.4 2.4 12.2 1.2 16.2-3.4 3.8-4.4 5.6-9.4 10.6-12.7 4.5-3 9.4-2.6 12 .5 1.6 1.9 1 4.1-1.3 4.8-2.6.8-4.4-1-3.7-3.2"
+        fill="none" stroke="url(#ink)" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M15 48.8c3.2-2.7 7-3.9 11.2-3.7" fill="none" stroke="url(#ink)" stroke-width="2.1" stroke-linecap="round" opacity=".85"/>
+  <circle cx="45.8" cy="44.2" r="2.3" fill="#EAF2FF"/>
+</svg>
