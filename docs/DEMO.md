@@ -1,8 +1,8 @@
-# 演示
+﻿# 演示
 
-[▶ 15 秒完整演示](https://github.com/w-j-y-wjy/dsh-ink-whale/raw/main/assets/demo.mp4) · 1280×826 · 约 620 KB · 浅色主题
+[▶ 15 秒完整演示](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4) · 1280×826 · 约 620 KB · 浅色主题
 
-[![演示视频：鲸鱼终帧](../assets/demo-poster.png)](https://github.com/w-j-y-wjy/dsh-ink-whale/raw/main/assets/demo.mp4)
+[![演示视频：鲸鱼终帧](../assets/demo-poster.png)](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4)
 
 视频不随 npm 包发布，仓库里的文件是 [`assets/demo.mp4`](../assets/demo.mp4)。
 
@@ -32,3 +32,4 @@
 1. 装好插件后重启 DSH；开屏每次页面加载播一次。
 2. 想固定文案 / 字体 / 深浅，先在「设置 → 内置插件 → 开屏」调好，再重启录制。
 3. Windows 下 `Win + G` 就能录窗口；录完建议裁掉桌面黑边，只留应用窗口。
+

@@ -1,4 +1,4 @@
-# dsh-ink-whale · 墨鲸开屏
+﻿# dsh-ink-whale · 墨鲸开屏
 
 [![npm](https://img.shields.io/npm/v/dsh-ink-whale)](https://www.npmjs.com/package/dsh-ink-whale)
 [![license](https://img.shields.io/npm/l/dsh-ink-whale)](LICENSE)
@@ -7,9 +7,9 @@ DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的
 
 ## 演示
 
-[▶ 15 秒演示（1280×826，约 620 KB）](https://github.com/w-j-y-wjy/dsh-ink-whale/raw/main/assets/demo.mp4)——浅色主题下从首笔写到鲸鱼推近、主界面浮出。
+[▶ 15 秒演示（1280×826，约 620 KB）](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4)——浅色主题下从首笔写到鲸鱼推近、主界面浮出。
 
-[![演示视频：鲸鱼终帧](assets/demo-poster.png)](https://github.com/w-j-y-wjy/dsh-ink-whale/raw/main/assets/demo.mp4)
+[![演示视频：鲸鱼终帧](assets/demo-poster.png)](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4)
 
 ![设置页：内嵌预览、文字、字体、深浅](assets/plugin-settings.png)
 
@@ -68,3 +68,4 @@ node _test/boot-cover-check.mjs  # 开发期：首屏遮罩（主界面不闪）
 ## 许可
 
 代码 MIT（[LICENSE](LICENSE)）。8 套笔画数据为 7×SIL OFL 1.1 + Hershey 条款（[LICENSES/](LICENSES/FONTS-ATTRIBUTION.md)）。DeepSeek 鲸鱼 / 字标路径版权归 DeepSeek，**未获授权**；本项目是非官方个人项目，使用限制见 [NOTICE.md](NOTICE.md)。
+
