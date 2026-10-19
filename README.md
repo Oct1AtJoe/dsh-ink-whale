@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/dsh-ink-whale)](https://www.npmjs.com/package/dsh-ink-whale)
 [![license](https://img.shields.io/npm/l/dsh-ink-whale)](LICENSE)
-
+[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/w-j-y-wjy/dsh-ink-whale)
 DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的文字，最后收在鲸鱼锁标与副标题上，再让鲸鱼缓慢推近、整屏淡出，主界面顺势露出来。字体、文字、深浅色都在「设置 → 内置插件 → 开屏」里配置。
 
 ## 演示
