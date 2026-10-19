@@ -7,11 +7,11 @@ DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的
 
 ## 演示
 
-[▶ 15 秒演示（1280×826，约 620 KB）](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4)——浅色主题下从首笔写到鲸鱼推近、主界面浮出。
+![墨鲸开屏：从首笔写到鲸鱼推近、主界面浮出](https://raw.githubusercontent.com/w-j-y-wjy/dsh-ink-whale/main/assets/demo.gif)
 
-[![演示视频：鲸鱼终帧](assets/demo-poster.png)](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4)
+[▶ 高清 MP4（1280×826，620 KB）](https://github.com/w-j-y-wjy/dsh-ink-whale/blob/main/assets/demo.mp4) · 浅色主题，15 秒完整流程
 
-![设置页：内嵌预览、文字、字体、深浅](assets/plugin-settings.png)
+![设置页：内嵌预览、文字、字体、深浅](https://raw.githubusercontent.com/w-j-y-wjy/dsh-ink-whale/main/assets/plugin-settings.png)
 
 更多截图见 [docs/DEMO.md](docs/DEMO.md)。
 
@@ -67,5 +67,8 @@ node _test/boot-cover-check.mjs  # 开发期：首屏遮罩（主界面不闪）
 
 ## 许可
 
-代码 MIT（[LICENSE](LICENSE)）。8 套笔画数据为 7×SIL OFL 1.1 + Hershey 条款（[LICENSES/](LICENSES/FONTS-ATTRIBUTION.md)）。DeepSeek 鲸鱼 / 字标路径版权归 DeepSeek，**未获授权**；本项目是非官方个人项目，使用限制见 [NOTICE.md](NOTICE.md)。
+代码 MIT © [w-j-y-wjy](https://github.com/w-j-y-wjy)（[LICENSE](LICENSE)）。8 套笔画数据为 7×SIL OFL 1.1 + Hershey 条款（[LICENSES/](LICENSES/FONTS-ATTRIBUTION.md)）。DeepSeek 鲸鱼 / 字标路径版权归 DeepSeek，**未获授权**；本项目是非官方个人项目，使用限制见 [NOTICE.md](NOTICE.md)。
+
+[![](https://img.shields.io/badge/powered_by-dsh-4D6BFE?style=flat-square&logo=deepseek&logoColor=white)](https://github.com/deepseek-ai/deepseek-harness)
+
 
