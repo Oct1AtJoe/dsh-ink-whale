@@ -19,13 +19,15 @@ DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的
 
 ## 安装
 
-npm 发布后：
+DSH Desktop：在 App 里打开 **插件** 页搜索 `dsh-ink-whale` 安装。桌面端的 profile 归 App 独占，命令行会被拒绝（`profile "desktop" is managed exclusively by the Electron application`）。
+
+`dsh web` 等其他 profile 用命令行：
 
 ```powershell
-dsh plugin --profile desktop add dsh-ink-whale
+dsh plugin --profile web add dsh-ink-whale
 ```
 
-或在 DSH 的「插件」页安装。改 Host 半或升级插件后重启 dsh；只改浏览器半刷新页面即可。本地源码：`pnpm install` → `npm run build`，再让插件管理器从本目录安装。
+升级时重新执行同一条命令（`dsh plugin` 是 pnpm 的透传，也可 `... add dsh-ink-whale@latest`）；桌面端在插件页卸载重装，或装 dshmarket 后用它的「更新」。改 Host 半或升级插件后重启 dsh；只改浏览器半刷新页面即可。本地源码：`pnpm install` → `npm run build`，再让插件管理器从本目录安装。
 
 ## 使用
 
