@@ -86,3 +86,7 @@ boot 卡 → 遮罩 → 开屏（auto 深浅跟随 DSH）是同一个底色。�
 - `_test/splash-check.mjs`（开发期，不随包发布）用 headless Edge 把新引擎和旧 `index.html` / `index-light.html` 在同一组时间点定格截图，逐像素比对；深色 Caveat、浅色 Hershey、中文楷体回退三种组合均 0 差异。
 - `_test/handoff-check.mjs` 用仿 AppFrame（`overlay > .dshiw-mount > .dshiw-root`）按真实经过时间采样计算样式和包围盒：鲸鱼单调推近且中心不动、字标/副标题包围盒不变、整屏只淡出、主界面零动画零 transform-origin 写入；同时验证 inline 预览和 reduce 模式不缩放。帧间隔另测（无截图），`DSHIW_GPU=1` 可开 GPU 对照。
 - `_test/boot-cover-check.mjs` 直接 import Host 半的 `apply` / `bootCoverRows` / `BOOT_COVER_STYLE` / `BOOT_COVER_SCRIPT`：先用假 ctx 验证 `apply` 监听 `webserver/index-inject` 并推入两行，再在无头 Edge 里模拟「boot 卡换成 AppFrame」，验证遮罩在 AppFrame 出现时立刻盖上、同色、层级低于开屏、`drop()` 后移除，以及缓存 `enabled:false` 时完全不遮。
+
+## 播放节奏（`skipWhale` / `speed`）
+- `skipWhale=true`：把收尾点从「副标题停留后」提到「字迹淡出末尾」（约 8.2 秒），`render` 会把超过该点的时间钉住，鲸鱼描边、上色、字标、副标题一律不出现，收场改用 420ms 普通淡出而不是 1.5 秒推近交接。
+- `speed`：只压缩墙钟时间（`t = elapsed * speed`），时间轴本身仍是原单位，所以 `seek()` 与像素自检不受影响；取值 0.5 / 1 / 1.5 / 2 / 3，引擎侧再夹到 0.25–4。

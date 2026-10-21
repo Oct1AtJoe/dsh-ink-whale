@@ -23,3 +23,10 @@ _test/boot-cover-enabled.html
 _test/boot-cover-disabled.html
 _test/profile/
 _test/profile-client/
+# 新增自检（dpr / 兜底字体 / 播放节奏）生成的 harness 与 headless profile
+_test/dpr-harness.html
+_test/fb-harness.html
+_test/pace-harness.html
+_test/profile-dpr/
+_test/profile-fb/
+_test/profile-pace/

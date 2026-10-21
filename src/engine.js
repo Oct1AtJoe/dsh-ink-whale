@@ -243,6 +243,10 @@ function dshiwCreateSplash(host, options) {
   if (!TEXT) TEXT = 'DeepSeek';
   var CAPTION = String(opts.caption == null ? '' : opts.caption);
   var HOLD = typeof opts.hold === 'number' && isFinite(opts.hold) ? opts.hold : 2.0;
+  /* 写完字就收场：跳过鲸鱼描边、上色、字标与副标题，直接淡出。 */
+  var SKIP_WHALE = !!opts.skipWhale;
+  /* 播放倍速：只压缩墙钟时间，时间轴本身仍是原单位，seek/测试不受影响。 */
+  var SPEED = typeof opts.speed === 'number' && isFinite(opts.speed) ? dshiwClamp(opts.speed, 0.25, 4) : 1;
   var reduce = false;
   try { reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reduce = false; }
 
@@ -381,7 +385,7 @@ function dshiwCreateSplash(host, options) {
   var T0 = 0.78, W_START = 1.0, W_END = 6.1, PEN_OUT = 6.62, FADE_S = 7.62, FADE_E = 8.42,
       D_START = 8.28, D_END = 10.34, FILL_S = 10.4, FILL_E = 11.24, RIM_S = 10.96, RIM_E = 11.5,
       WORD_S = 11.05, WORD_E = 11.95, SUB_S = 12.08, SUB_E = 12.98, HOP_S = 12.14, HOP_E = 13.02,
-      HALO_E = 13.2, HALO_T = 12.4, SWAY_T = 11.9, SWAY_E = 13.4, END = 16.2;
+      HALO_E = 13.2, HALO_T = 12.4, SWAY_T = 11.9, SWAY_E = 13.4, END = 16.2, STOP_T = 15;
 
   function applyTimeline() {
     var dur = dshiwClamp(writeDur, 2.6, 6.4);
@@ -398,6 +402,9 @@ function dshiwCreateSplash(host, options) {
     SWAY_T = HOP_S - 0.24; SWAY_E = HOP_E + 0.38;
     T0 = W_START - 0.22;
     END = SUB_E + 3.2;
+    /* 跳过鲸鱼时，时间轴在「字迹淡出」那一刻就到头，render 不会再进鲸鱼分支。 */
+    STOP_T = SKIP_WHALE ? FADE_E + 0.06 : SUB_E + HOLD;
+    END = Math.min(END, STOP_T + 0.4);
   }
 
   /* ---------------- 笔画构建 ---------------- */
@@ -434,19 +441,28 @@ function dshiwCreateSplash(host, options) {
     core.ctx.strokeStyle = '#fff';
     for (var j = 0; j < strokes.length; j++) if (!strokes[j].fb) drawBandsWide(core.ctx, strokes[j].pts, 0);
     if (fbs.length) {
+      /* 非拉丁字符（中文等）没有笔画数据，只能走系统字体 fillText。
+         发光不能用 strokeText 描一圈：glowSteps 是给「细笔画带」加的宽度，
+         落到实心字形轮廓上会变成一圈又厚又硬的边框——换一台电脑换了兜底
+         字体，这圈边框的形状和粗细就跟着变，看着像多了几条不搭的线。
+         这里改成投影高斯晕开，宽度只跟字号相关，和字体无关。 */
       var layerGlow = glow, layerCore = core;
       layerGlow.ctx.font = px + 'px ' + FALLBACK_STACK;
       layerGlow.ctx.textBaseline = 'alphabetic'; layerGlow.ctx.textAlign = 'left';
       layerCore.ctx.font = px + 'px ' + FALLBACK_STACK;
       layerCore.ctx.textBaseline = 'alphabetic'; layerCore.ctx.textAlign = 'left';
       layerCore.ctx.fillStyle = '#fff';
-      layerGlow.ctx.strokeStyle = THEME.ink.glow;
-      for (var t = 0; t < steps.length; t++) {
-        layerGlow.ctx.globalAlpha = steps[t][1];
-        layerGlow.ctx.lineWidth = steps[t][0] * 2;
-        for (var f = 0; f < fbs.length; f++) layerGlow.ctx.strokeText(fbs[f].ch, fbs[f].x, fbs[f].y);
+      layerGlow.ctx.fillStyle = THEME.ink.glow;
+      layerGlow.ctx.shadowColor = THEME.ink.glow;
+      var halo = [[0.10 * px, 0.26], [0.22 * px, 0.14]];
+      for (var t = 0; t < halo.length; t++) {
+        layerGlow.ctx.globalAlpha = halo[t][1];
+        layerGlow.ctx.shadowBlur = halo[t][0];
+        for (var f = 0; f < fbs.length; f++) layerGlow.ctx.fillText(fbs[f].ch, fbs[f].x, fbs[f].y);
       }
       layerGlow.ctx.globalAlpha = 1;
+      layerGlow.ctx.shadowBlur = 0;
+      layerGlow.ctx.shadowColor = 'transparent';
       for (var g = 0; g < fbs.length; g++) layerCore.ctx.fillText(fbs[g].ch, fbs[g].x, fbs[g].y);
     }
     inkCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
@@ -749,6 +765,9 @@ function dshiwCreateSplash(host, options) {
   function aset(el, attr, val) { var k = '_a_' + attr; if (el[k] === val) return; el[k] = val; el.setAttribute(attr, val); }
 
   function render(t) {
+    /* 跳过鲸鱼时，字迹淡出之后就没有内容了：把时间钉在淡出末尾，
+       免得 seek 到更后面又画出鲸鱼、字标与副标题。 */
+    if (SKIP_WHALE && t >= FADE_E) t = FADE_E - 1e-4;
     if (t < FADE_E) {
       var f = dshiwSmooth(FADE_S, FADE_E, t);
       sset(canvas, 'opacity', String(1 - f));
@@ -823,8 +842,9 @@ function dshiwCreateSplash(host, options) {
     if (raf) cancelAnimationFrame(raf);
     raf = 0;
     skipEl.classList.remove('is-visible');
-    if (inline || reduce) {
-      var fade = reduce ? 260 : 520;
+    if (inline || reduce || SKIP_WHALE) {
+      /* 跳过鲸鱼时没有推近的对象，用普通淡出收场，免得空转 1.5 秒。 */
+      var fade = reduce ? 260 : (SKIP_WHALE ? 420 : 520);
       root.style.transition = 'opacity ' + fade + 'ms ease';
       root.style.opacity = '0';
       doneTimer = setTimeout(function () {
@@ -840,17 +860,17 @@ function dshiwCreateSplash(host, options) {
 
   function tick(now) {
     if (!running) return;
-    var t = (now - startedAt) / 1000;
+    var t = (now - startedAt) / 1000 * SPEED;
     lastT = t;
     render(t);
-    if (t >= SUB_E + HOLD) { finish(); return; }
+    if (t >= STOP_T) { finish(); return; }
     raf = requestAnimationFrame(tick);
   }
 
   function start() {
     prepare();
     if (reduce) {
-      render(SUB_E + 1.0);
+      render(Math.min(SUB_E + 1.0, STOP_T));
       skipEl.classList.remove('is-visible');
       doneTimer = setTimeout(finish, 2600);
       return;
@@ -865,8 +885,9 @@ function dshiwCreateSplash(host, options) {
   function skip() {
     if (finished) return;
     if (reduce) { finish(); return; }
-    /* 提前跳过时先落到终帧 logo，再走同一段交接动画，避免缩放的是半截字迹 */
-    if (lastT < SUB_E) {
+    /* 提前跳过时先落到终帧 logo，再走同一段交接动画，避免缩放的是半截字迹；
+       跳过鲸鱼时没有可缩放的锁标，直接收场。 */
+    if (!SKIP_WHALE && lastT < SUB_E) {
       if (raf) cancelAnimationFrame(raf);
       running = false;
       render(SUB_E + 0.35);
@@ -934,9 +955,13 @@ function dshiwCreateSplash(host, options) {
   }
 
   function info() {
+    /* 时间轴由 prepare 推导，没播过也要给出真实值。 */
+    prepare();
     return {
       text: TEXT, font: fontKey, theme: themeKey, strokes: stCount, px: inkPx,
-      writeEnd: +W_END.toFixed(3), subEnd: +SUB_E.toFixed(3), end: +(SUB_E + HOLD).toFixed(3)
+      skipWhale: SKIP_WHALE, speed: SPEED,
+      writeEnd: +W_END.toFixed(3), subEnd: +SUB_E.toFixed(3),
+      stop: +STOP_T.toFixed(3), end: +(STOP_T + 0.4).toFixed(3)
     };
   }
 

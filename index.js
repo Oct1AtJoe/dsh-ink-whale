@@ -43,6 +43,9 @@ export const FONT_KEYS = [
 /** 深浅色策略：auto 跟随 DSH 主题。 */
 export const THEME_KEYS = ['auto', 'dark', 'light'];
 
+/** 手写播放倍速：写完之后按这个倍数压缩整段开屏时长。 */
+export const SPEED_KEYS = [0.5, 1, 1.5, 2, 3];
+
 /**
  * 插件配置。
  *
@@ -62,7 +65,12 @@ export const Config = z
     theme: z
       .union(THEME_KEYS.map((key) => z.const(key)))
       .default('auto')
-      .description('深浅色：auto 跟随 DSH 主题')
+      .description('深浅色：auto 跟随 DSH 主题'),
+    skipWhale: z.boolean().default(false).description('关闭后续鲸鱼动画：写完字直接淡出进入主界面'),
+    speed: z
+      .union(SPEED_KEYS.map((key) => z.const(key)))
+      .default(1)
+      .description('手写播放倍速：0.5 / 1 / 1.5 / 2 / 3')
   })
   .volatile();
 

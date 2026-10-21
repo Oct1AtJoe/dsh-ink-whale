@@ -34,7 +34,9 @@ window.__ModuleLoader__.load({
       name: 'DeepSeek',
       greeting: '{name}',
       caption: '探索未至之境',
-      theme: 'auto'
+      theme: 'auto',
+      skipWhale: false,
+      speed: 1
     };
 
     var FONT_LABEL = {};
@@ -42,6 +44,8 @@ window.__ModuleLoader__.load({
 
     var THEME_OPTIONS = ['auto', 'dark', 'light'];
     var THEME_LABEL = { auto: '跟随 DSH', dark: '深色', light: '浅色' };
+
+    var SPEED_OPTIONS = [0.5, 1, 1.5, 2, 3];
 
     /* ---------------- 配置校验 ---------------- */
     function textOr(value, fallback, max) {
@@ -58,7 +62,9 @@ window.__ModuleLoader__.load({
         name: textOr(src.name, DEFAULT_CONFIG.name, 48),
         greeting: textOr(src.greeting, DEFAULT_CONFIG.greeting, 80),
         caption: textOr(src.caption, DEFAULT_CONFIG.caption, 60),
-        theme: THEME_OPTIONS.indexOf(src.theme) >= 0 ? src.theme : 'auto'
+        theme: THEME_OPTIONS.indexOf(src.theme) >= 0 ? src.theme : 'auto',
+        skipWhale: src.skipWhale === true,
+        speed: SPEED_OPTIONS.indexOf(src.speed) >= 0 ? src.speed : 1
       };
     }
 
@@ -247,6 +253,8 @@ window.__ModuleLoader__.load({
             theme: resolveTheme(config.theme),
             caption: config.caption,
             hold: HOLD_SECONDS,
+            skipWhale: config.skipWhale,
+            speed: config.speed,
             skipLabel: '点击或按任意键跳过',
             onDone: props.onDone
           });
@@ -364,6 +372,8 @@ window.__ModuleLoader__.load({
           theme: resolveTheme(config.theme),
           caption: config.caption,
           hold: 1.2,
+          skipWhale: config.skipWhale,
+          speed: config.speed,
           inline: true,
           skipLabel: '',
           onDone: props.onDone
@@ -481,7 +491,7 @@ window.__ModuleLoader__.load({
               onClick: function () { setPreviewKey(Date.now()); }
             }, previewKey > 0 ? '重新播放' : '播放预览'),
             h('span', { className: 'dshiw-set__note' },
-              previewKey > 0 ? '点击画面可跳过' : '内嵌播放完整时间轴，约 12 秒'
+              previewKey > 0 ? '点击画面可跳过' : '内嵌播放完整时间轴（受倍速与鲸鱼开关影响）'
             )
           )
         ),
@@ -524,6 +534,37 @@ window.__ModuleLoader__.load({
         ),
 
         h('section', { className: 'dshiw-set__group' },
+          h('div', { className: 'dshiw-set__title' }, '播放节奏'),
+          h('div', { className: 'dshiw-set__row' },
+            h('span', { className: 'dshiw-set__rowText' },
+              h('span', { className: 'dshiw-set__label' }, '关闭后续鲸鱼动画'),
+              h('span', { className: 'dshiw-set__note' }, '贴着写完就直接淡出进主界面，不再描鲸鱼、不显示字标与副标题。')
+            ),
+            h('input', {
+              type: 'checkbox',
+              className: 'dshiw-set__switch',
+              checked: shown.skipWhale,
+              'aria-label': '关闭后续鲸鱼动画',
+              onChange: function (event) { commit('skipWhale', event.target.checked); }
+            })
+          ),
+          h('div', { className: 'dshiw-set__field' },
+            h('span', { className: 'dshiw-set__label' }, '手写播放倍速'),
+            h('div', { className: 'dshiw-set__seg' }, SPEED_OPTIONS.map(function (option) {
+              return h('button', {
+                key: String(option),
+                type: 'button',
+                className: 'dshiw-set__segBtn' + (shown.speed === option ? ' is-on' : ''),
+                onClick: function () { commit('speed', option); }
+              }, option === 1 ? '1x' : option + 'x');
+            })),
+            h('div', { className: 'dshiw-set__note' },
+              '整段开屏按倍数压缩，字迹与收尾一起变快；1x 约 14 秒，3x 约 5 秒。'
+            )
+          )
+        ),
+
+        h('section', { className: 'dshiw-set__group' },
           h('div', { className: 'dshiw-set__row' },
             h('span', { className: 'dshiw-set__rowText' },
               h('span', { className: 'dshiw-set__label' }, '启动时播放开屏'),
@@ -539,7 +580,7 @@ window.__ModuleLoader__.load({
           ),
           h('div', { className: 'dshiw-set__actions' },
             h('button', { type: 'button', onClick: resetDefaults }, '恢复默认'),
-            h('span', { className: 'dshiw-set__note' }, '只重置这六项配置。')
+            h('span', { className: 'dshiw-set__note' }, '只重置这几项配置。')
           )
         ),
 

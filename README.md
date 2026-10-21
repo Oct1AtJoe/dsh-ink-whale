@@ -1,9 +1,11 @@
-﻿# dsh-ink-whale · 墨鲸开屏
+# dsh-ink-whale · 墨鲸开屏
 
 [![npm](https://img.shields.io/npm/v/dsh-ink-whale)](https://www.npmjs.com/package/dsh-ink-whale)
 [![license](https://img.shields.io/npm/l/dsh-ink-whale)](LICENSE)
 [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/w-j-y-wjy/dsh-ink-whale)
-DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的文字，最后收在鲸鱼锁标与副标题上，再让鲸鱼缓慢推近、整屏淡出，主界面顺势露出来。字体、文字、深浅色都在「设置 → 内置插件 → 开屏」里配置。
+DeepSeek Harness（DSH）开屏插件：启动时按**真实笔顺**写出你的文字，最后收在鲸鱼锁标与副标题上，再让鲸鱼缓慢推近、整屏淡出，主界面顺势露出来。字体、文字、深浅色、播放节奏都在「设置 → 内置插件 → 开屏」里配置。
+
+> **非官方项目**，与 DeepSeek 无关联。鲸鱼与 `deepseek` 字标取自 DeepSeek 官方资源，版权与商标归 DeepSeek 所有，本项目未获授权；仅作个人界面装饰，请勿用于冒充官方或商业用途。详见 [NOTICE.md](NOTICE.md)。
 
 ## 演示
 
@@ -28,7 +30,7 @@ dsh plugin --profile desktop add dsh-ink-whale
 ## 使用
 
 - 每次页面加载播放一次，点击或按任意键跳过；系统开启「减少动态效果」时直接呈现终帧。
-- **设置 → 内置插件 → 开屏**：内嵌 16:9 预览、称呼 / 问候语 / 副标题、8 套手写体、深浅色、启动开关。
+- **设置 → 内置插件 → 开屏**：内嵌 16:9 预览、称呼 / 问候语 / 副标题、8 套手写体、深浅色、播放节奏、启动开关。
 - 配置写进 profile 的 Cordis patch，重启后保留；Host 设置不可用时退回本机 localStorage。
 
 | 字段 | 默认 | 说明 |
@@ -39,6 +41,8 @@ dsh plugin --profile desktop add dsh-ink-whale
 | `greeting` | `{name}` | 问候语模板，`{name}` 替换为称呼 |
 | `caption` | `探索未至之境` | 鲸鱼锁标下方的副标题，留空则不显示 |
 | `theme` | `auto` | `auto` 跟随 DSH 主题，或 `dark` / `light` |
+| `skipWhale` | `false` | 关闭后续鲸鱼动画：写完字直接淡出进主界面，总时长约 8 秒 |
+| `speed` | `1` | 播放倍速：`0.5` / `1` / `1.5` / `2` / `3`，按倍数压缩整段开屏 |
 
 也可以直接改 profile 的 `cordis.patch.yml`：
 
@@ -51,6 +55,8 @@ dsh plugin --profile desktop add dsh-ink-whale
     caption: 探索未至之境
     theme: auto
     enabled: true
+    skipWhale: false
+    speed: 1
 ```
 
 ## 构建与验收
